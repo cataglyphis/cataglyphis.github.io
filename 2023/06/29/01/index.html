@@ -1,0 +1,654 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="ProxySQL 官方的 Helm Chart 长期未更新，为了方便在 Kuberneters 中部署，重新编写了 ProxySQL Helm Chart。功能包括：  支持将 ProxySQL 的配置存储到 PV 中 支持以 NodePort 的形式暴露 ProxySQL 服务，用于跨集群访问">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ProxySQL Helm Chart 部署">
+<meta property="og:url" content="https://cataglyphis.github.io/2023/06/29/01/index.html">
+<meta property="og:site_name">
+<meta property="og:description" content="ProxySQL 官方的 Helm Chart 长期未更新，为了方便在 Kuberneters 中部署，重新编写了 ProxySQL Helm Chart。功能包括：  支持将 ProxySQL 的配置存储到 PV 中 支持以 NodePort 的形式暴露 ProxySQL 服务，用于跨集群访问">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-06-29T12:18:11.000Z">
+<meta property="article:modified_time" content="2023-06-29T12:33:56.551Z">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="ProxySQL">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>ProxySQL Helm Chart 部署 - </title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"cataglyphis.github.io","root":"/","version":"1.9.4","typing":{"enable":true,"typeSpeed":60,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"left","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong></strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ProxySQL Helm Chart 部署"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-06-29 20:18" pubdate>
+          2023年6月29日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5.8k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          49 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="padding-left: 2rem; margin-right: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">ProxySQL Helm Chart 部署</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>ProxySQL 官方的 Helm Chart 长期未更新，为了方便在 Kuberneters 中部署，重新编写了 ProxySQL Helm Chart。功能包括：</p>
+<ul>
+<li>支持将 ProxySQL 的配置存储到 PV 中</li>
+<li>支持以 NodePort 的形式暴露 ProxySQL 服务，用于跨集群访问</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="Chart"><a href="#Chart" class="headerlink" title="Chart"></a>Chart</h2><p>Chart 文件目录结构如下：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs stylus">├── Chart<span class="hljs-selector-class">.yaml</span><br>├── templates<br>│   ├── NOTES<span class="hljs-selector-class">.txt</span><br>│   ├── _helpers<span class="hljs-selector-class">.tpl</span><br>│   ├── statefuleset<span class="hljs-selector-class">.yaml</span><br>│   ├── svc-headless<span class="hljs-selector-class">.yaml</span><br>│   ├── svc<span class="hljs-selector-class">.yaml</span><br>│   └── tests<br>│       └── test-connection<span class="hljs-selector-class">.yaml</span><br>└── values.yaml<br></code></pre></td></tr></table></figure>
+
+<p>Chart.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v2</span><br><span class="hljs-attr">name:</span> <span class="hljs-string">proxysql</span><br><span class="hljs-attr">description:</span> <span class="hljs-string">ProxySQL</span> <span class="hljs-string">Helm</span> <span class="hljs-string">Chart</span> <span class="hljs-string">for</span> <span class="hljs-string">Kubernetes</span><br><br><span class="hljs-attr">type:</span> <span class="hljs-string">application</span><br><span class="hljs-attr">version:</span> <span class="hljs-number">0.1</span><span class="hljs-number">.0</span><br><span class="hljs-attr">appVersion:</span> <span class="hljs-string">&quot;1.16.0&quot;</span><br></code></pre></td></tr></table></figure>
+
+
+<h2 id="helpers-tpl"><a href="#helpers-tpl" class="headerlink" title="_helpers.tpl"></a>_helpers.tpl</h2><figure class="highlight handlebars"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><code class="hljs handlebars"><span class="hljs-template-tag">&#123;&#123;/*</span><br><span class="hljs-template-tag"><span class="hljs-name">Expand</span> <span class="hljs-name">the</span> <span class="hljs-name">name</span> <span class="hljs-name">of</span> <span class="hljs-name">the</span> <span class="hljs-name">chart</span>.</span><br><span class="hljs-template-tag">*/&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> define <span class="hljs-string">&quot;proxysql.name&quot;</span> -&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> default .Chart.Name .Values.nameOverride | trunc <span class="hljs-number">63</span> | trimSuffix <span class="hljs-string">&quot;-&quot;</span> &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-tag">&#123;&#123;/*</span><br><span class="hljs-template-tag"><span class="hljs-name">Create</span> <span class="hljs-name">a</span> <span class="hljs-name">default</span> <span class="hljs-name">fully</span> <span class="hljs-name">qualified</span> <span class="hljs-name">app</span> <span class="hljs-name">name</span>.</span><br><span class="hljs-template-tag"><span class="hljs-name">We</span> <span class="hljs-name">truncate</span> <span class="hljs-name">at</span> <span class="hljs-name">63</span> <span class="hljs-name">chars</span> <span class="hljs-name">because</span> <span class="hljs-name">some</span> <span class="hljs-name">Kubernetes</span> <span class="hljs-name">name</span> <span class="hljs-name">fields</span> <span class="hljs-name">are</span> <span class="hljs-name">limited</span> <span class="hljs-name">to</span> <span class="hljs-name">this</span> (<span class="hljs-name">by</span> <span class="hljs-name">the</span> <span class="hljs-name">DNS</span> <span class="hljs-name">naming</span> <span class="hljs-name">spec</span>).</span><br><span class="hljs-template-tag"><span class="hljs-name"><span class="hljs-built_in">If</span></span> <span class="hljs-name">release</span> <span class="hljs-name">name</span> <span class="hljs-name">contains</span> <span class="hljs-name">chart</span> <span class="hljs-name">name</span> <span class="hljs-name">it</span> <span class="hljs-name">will</span> <span class="hljs-name">be</span> <span class="hljs-name">used</span> <span class="hljs-name">as</span> <span class="hljs-name">a</span> <span class="hljs-name">full</span> <span class="hljs-name">name</span>.</span><br><span class="hljs-template-tag">*/&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> define <span class="hljs-string">&quot;proxysql.fullname&quot;</span> -&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> if .Values.fullnameOverride &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> .Values.fullnameOverride | trunc <span class="hljs-number">63</span> | trimSuffix <span class="hljs-string">&quot;-&quot;</span> &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> else &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> $name <span class="hljs-attr">:</span>= default .Chart.Name .Values.nameOverride &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> if contains $name .Release.Name &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> .Release.Name | trunc <span class="hljs-number">63</span> | trimSuffix <span class="hljs-string">&quot;-&quot;</span> &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> else &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> printf <span class="hljs-string">&quot;%s-%s&quot;</span> .Release.Name $name | trunc <span class="hljs-number">63</span> | trimSuffix <span class="hljs-string">&quot;-&quot;</span> &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-tag">&#123;&#123;/*</span><br><span class="hljs-template-tag"><span class="hljs-name">Create</span> <span class="hljs-name">chart</span> <span class="hljs-name">name</span> <span class="hljs-name">and</span> <span class="hljs-name">version</span> <span class="hljs-name">as</span> <span class="hljs-name">used</span> <span class="hljs-name">by</span> <span class="hljs-name">the</span> <span class="hljs-name">chart</span> <span class="hljs-name">label</span>.</span><br><span class="hljs-template-tag">*/&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> define <span class="hljs-string">&quot;proxysql.chart&quot;</span> -&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> printf <span class="hljs-string">&quot;%s-%s&quot;</span> .Chart.Name .Chart.Version | replace <span class="hljs-string">&quot;+&quot;</span> <span class="hljs-string">&quot;_&quot;</span> | trunc <span class="hljs-number">63</span> | trimSuffix <span class="hljs-string">&quot;-&quot;</span> &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-tag">&#123;&#123;/*</span><br><span class="hljs-template-tag"><span class="hljs-name">Common</span> <span class="hljs-name">labels</span></span><br><span class="hljs-template-tag">*/&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> define <span class="hljs-string">&quot;proxysql.labels&quot;</span> -&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml">helm.sh/chart: </span><span class="hljs-template-variable">&#123;&#123; <span class="hljs-name">include</span> <span class="hljs-string">&quot;proxysql.chart&quot;</span> . &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123; <span class="hljs-name">include</span> <span class="hljs-string">&quot;proxysql.selectorLabels&quot;</span> . &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> if .Chart.AppVersion &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml">app.kubernetes.io/version: </span><span class="hljs-template-variable">&#123;&#123; <span class="hljs-name">.Chart.AppVersion</span> | quote &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml">app.kubernetes.io/managed-by: </span><span class="hljs-template-variable">&#123;&#123; <span class="hljs-name">.Release.Service</span> &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-tag">&#123;&#123;/*</span><br><span class="hljs-template-tag"><span class="hljs-name">Selector</span> <span class="hljs-name">labels</span></span><br><span class="hljs-template-tag">*/&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> define <span class="hljs-string">&quot;proxysql.selectorLabels&quot;</span> -&#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml">app.kubernetes.io/name: </span><span class="hljs-template-variable">&#123;&#123; <span class="hljs-name">include</span> <span class="hljs-string">&quot;proxysql.name&quot;</span> . &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml">app.kubernetes.io/instance: </span><span class="hljs-template-variable">&#123;&#123; <span class="hljs-name">.Release.Name</span> &#125;&#125;</span><span class="language-xml"></span><br><span class="language-xml"></span><span class="hljs-template-variable">&#123;&#123;<span class="hljs-name">-</span> end &#125;&#125;</span><br></code></pre></td></tr></table></figure>
+
+<h2 id="statefulset-yaml"><a href="#statefulset-yaml" class="headerlink" title="statefulset.yaml"></a>statefulset.yaml</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">StatefulSet</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> &#123;&#123; <span class="hljs-string">template</span> <span class="hljs-string">&quot;proxysql.fullname&quot;</span> <span class="hljs-string">.</span> &#125;&#125;<br>  <span class="hljs-attr">labels:</span> &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.labels&quot;</span> <span class="hljs-string">.</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">4</span> &#125;&#125;<br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">matchLabels:</span> &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.selectorLabels&quot;</span> <span class="hljs-string">.</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">6</span> &#125;&#125;<br>  <span class="hljs-attr">serviceName:</span> &#123;&#123; <span class="hljs-string">template</span> <span class="hljs-string">&quot;proxysql.fullname&quot;</span> <span class="hljs-string">.</span> &#125;&#125;<span class="hljs-string">-headless</span><br>  <span class="hljs-attr">replicas:</span> &#123;&#123; <span class="hljs-string">.Values.replicaCount</span> &#125;&#125;<br>  <span class="hljs-attr">minReadySeconds:</span> <span class="hljs-number">5</span><br>  <span class="hljs-attr">template:</span><br>    <span class="hljs-attr">metadata:</span><br>      <span class="hljs-attr">labels:</span> &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.selectorLabels&quot;</span> <span class="hljs-string">.</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">8</span> &#125;&#125;<br>    <span class="hljs-attr">spec:</span><br>      <span class="hljs-attr">terminationGracePeriodSeconds:</span> <span class="hljs-number">10</span><br>      <span class="hljs-attr">containers:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">proxysql</span><br>        <span class="hljs-attr">image:</span> &#123;&#123; <span class="hljs-string">.Values.image</span> &#125;&#125;<br>        <span class="hljs-attr">imagePullPolicy:</span> &#123;&#123; <span class="hljs-string">.Values.imagePullPolicy</span> &#125;&#125;<br>        <span class="hljs-attr">resources:</span><br>          &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">toYaml</span> <span class="hljs-string">.Values.resources</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">10</span> &#125;&#125;<br>        <span class="hljs-attr">ports:</span><br>        <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">admin</span><br>          <span class="hljs-attr">containerPort:</span> <span class="hljs-number">6032</span><br>          <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>        <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">proxysql</span><br>          <span class="hljs-attr">containerPort:</span> <span class="hljs-number">6033</span><br>          <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>        <span class="hljs-attr">volumeMounts:</span><br>        <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">proxysql-data</span><br>          <span class="hljs-attr">mountPath:</span> <span class="hljs-string">/var/lib/proxysql</span><br>        <span class="hljs-attr">livenessProbe:</span><br>          <span class="hljs-attr">tcpSocket:</span><br>            <span class="hljs-attr">port:</span> <span class="hljs-string">admin</span><br>          <span class="hljs-attr">initialDelaySeconds:</span> <span class="hljs-number">10</span><br>          <span class="hljs-attr">periodSeconds:</span> <span class="hljs-number">10</span><br>          <span class="hljs-attr">timeoutSeconds:</span> <span class="hljs-number">1</span><br>          <span class="hljs-attr">successThreshold:</span> <span class="hljs-number">1</span><br>          <span class="hljs-attr">failureThreshold:</span> <span class="hljs-number">3</span><br>        <span class="hljs-attr">readinessProbe:</span><br>          <span class="hljs-attr">tcpSocket:</span><br>            <span class="hljs-attr">port:</span> <span class="hljs-string">admin</span><br>          <span class="hljs-attr">initialDelaySeconds:</span> <span class="hljs-number">10</span><br>          <span class="hljs-attr">periodSeconds:</span> <span class="hljs-number">10</span><br>          <span class="hljs-attr">timeoutSeconds:</span> <span class="hljs-number">1</span><br>          <span class="hljs-attr">successThreshold:</span> <span class="hljs-number">1</span><br>          <span class="hljs-attr">failureThreshold:</span> <span class="hljs-number">3</span><br>        <span class="hljs-attr">startupProbe:</span><br>          <span class="hljs-attr">tcpSocket:</span><br>            <span class="hljs-attr">port:</span> <span class="hljs-string">admin</span><br>          <span class="hljs-attr">initialDelaySeconds:</span> <span class="hljs-number">10</span><br>          <span class="hljs-attr">periodSeconds:</span> <span class="hljs-number">3</span><br>          <span class="hljs-attr">timeoutSeconds:</span> <span class="hljs-number">1</span><br>          <span class="hljs-attr">successThreshold:</span> <span class="hljs-number">1</span><br>          <span class="hljs-attr">failureThreshold:</span> <span class="hljs-number">3</span><br>  <span class="hljs-attr">volumeClaimTemplates:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">metadata:</span><br>      <span class="hljs-attr">name:</span> <span class="hljs-string">proxysql-data</span><br>    <span class="hljs-attr">spec:</span><br>      <span class="hljs-attr">accessModes:</span> [ <span class="hljs-string">&quot;ReadWriteOnce&quot;</span> ]<br>      <span class="hljs-attr">resources:</span><br>        <span class="hljs-attr">requests:</span><br>          <span class="hljs-attr">storage:</span> <span class="hljs-string">1Gi</span><br>      <span class="hljs-attr">storageClassName:</span> &#123;&#123; <span class="hljs-string">.Values.storageClassName</span> &#125;&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="svc-headless"><a href="#svc-headless" class="headerlink" title="svc-headless"></a>svc-headless</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> &#123;&#123; <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.fullname&quot;</span> <span class="hljs-string">.</span> &#125;&#125;<span class="hljs-string">-headless</span><br>  <span class="hljs-attr">labels:</span><br>    &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.labels&quot;</span> <span class="hljs-string">.</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">4</span> &#125;&#125;<br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">ClusterIP</span><br>  <span class="hljs-attr">clusterIP:</span> <span class="hljs-string">None</span><br>  <span class="hljs-attr">ports:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">admin</span><br>      <span class="hljs-attr">port:</span> <span class="hljs-number">6032</span><br>      <span class="hljs-attr">targetPort:</span> <span class="hljs-string">admin</span><br>      <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">proxysql</span><br>      <span class="hljs-attr">port:</span> <span class="hljs-number">6033</span><br>      <span class="hljs-attr">targetPort:</span> <span class="hljs-string">proxysql</span><br>      <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>  <span class="hljs-attr">selector:</span><br>    &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.selectorLabels&quot;</span> <span class="hljs-string">.</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">4</span> &#125;&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="svc"><a href="#svc" class="headerlink" title="svc"></a>svc</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> &#123;&#123; <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.fullname&quot;</span> <span class="hljs-string">.</span> &#125;&#125;<br>  <span class="hljs-attr">labels:</span><br>    &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.labels&quot;</span> <span class="hljs-string">.</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">4</span> &#125;&#125;<br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">type:</span> &#123;&#123; <span class="hljs-string">.Values.service.type</span> &#125;&#125;<br>  <span class="hljs-attr">ports:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">proxysql</span><br>      <span class="hljs-attr">port:</span> <span class="hljs-number">6033</span><br>      <span class="hljs-attr">targetPort:</span> <span class="hljs-number">6033</span><br>      &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">if</span> <span class="hljs-string">and</span> <span class="hljs-string">.Values.service.nodePort</span> <span class="hljs-string">(eq</span> <span class="hljs-string">.Values.service.type</span> <span class="hljs-string">&quot;NodePort&quot;</span><span class="hljs-string">)</span> &#125;&#125;<br>      <span class="hljs-attr">nodePort:</span> &#123;&#123; <span class="hljs-string">.Values.service.nodePort</span> &#125;&#125;<br>      &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">end</span> &#125;&#125;<br>      <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span><br>  <span class="hljs-attr">selector:</span><br>    &#123;&#123;<span class="hljs-bullet">-</span> <span class="hljs-string">include</span> <span class="hljs-string">&quot;proxysql.selectorLabels&quot;</span> <span class="hljs-string">.</span> <span class="hljs-string">|</span> <span class="hljs-string">nindent</span> <span class="hljs-number">4</span> &#125;&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="values"><a href="#values" class="headerlink" title="values"></a>values</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># Default values for proxysql.</span><br><span class="hljs-comment"># This is a YAML-formatted file.</span><br><span class="hljs-comment"># Declare variables to be passed into your templates.</span><br><br><span class="hljs-attr">replicaCount:</span> <span class="hljs-number">1</span><br><br><span class="hljs-attr">image:</span> <span class="hljs-string">&quot;proxysql/proxysql:2.5.2&quot;</span><br><span class="hljs-attr">imagePullPolicy:</span> <span class="hljs-string">IfNotPresent</span><br><span class="hljs-attr">storageClassName:</span> <span class="hljs-string">&quot;&quot;</span><br><br><span class="hljs-attr">nameOverride:</span> <span class="hljs-string">&quot;&quot;</span><br><span class="hljs-attr">fullnameOverride:</span> <span class="hljs-string">&quot;&quot;</span><br><br><span class="hljs-attr">service:</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">NodePort</span><br>  <span class="hljs-attr">nodePort:</span> <span class="hljs-number">30630</span><br><br><span class="hljs-attr">resources:</span><br>  <span class="hljs-attr">limits:</span><br>    <span class="hljs-attr">cpu:</span> <span class="hljs-string">2000m</span><br>    <span class="hljs-attr">memory:</span> <span class="hljs-string">2Gi</span><br>  <span class="hljs-attr">requests:</span><br>    <span class="hljs-attr">cpu:</span> <span class="hljs-string">100m</span><br>    <span class="hljs-attr">memory:</span> <span class="hljs-string">512Mi</span><br></code></pre></td></tr></table></figure>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Kubernetes/" class="category-chain-item">Kubernetes</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Kubernetes/">#Kubernetes</a>
+      
+        <a href="/tags/ProxySQL/">#ProxySQL</a>
+      
+    </div>
+  
+</div>
+
+
+              
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/03/12/01/" title="通过 Filebeat 收集 Kubernetes Pod 日志并保存至 Elasticsearch">
+                        <span class="hidden-mobile">通过 Filebeat 收集 Kubernetes Pod 日志并保存至 Elasticsearch</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="waline"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#waline', function() {
+      Fluid.utils.createCssLink('https://lib.baomitu.com/waline/2.14.1/waline.min.css')
+      Fluid.utils.createScript('https://lib.baomitu.com/waline/2.14.1/waline.min.js', function() {
+        var options = Object.assign(
+          {"serverURL":"https://waline-9c792py0j-cataglyphis.vercel.app","path":"window.location.pathname","meta":["nick"],"requiredMeta":[],"lang":"zh-CN","emoji":["https://cdn.jsdelivr.net/gh/walinejs/emojis/weibo"],"dark":"html[data-user-color-scheme=\"dark\"]","wordLimit":250,"pageSize":10,"appId":"slnvt01vxFMkkm2lVFamf8N2-MdYXbMMI","appKey":"xKqmZ21QOED1ABBowyZ6zYeB"},
+          {
+            el: '#waline',
+            path: window.location.pathname
+          }
+        )
+        Waline.init(options);
+        Fluid.utils.waitElementVisible('#waline .vcontent', () => {
+          var imgSelector = '#waline .vcontent img:not(.vemoji)';
+          Fluid.plugins.imageCaption(imgSelector);
+          Fluid.plugins.fancyBox(imgSelector);
+        })
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
